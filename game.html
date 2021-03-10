@@ -1,0 +1,201 @@
+<html>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+	
+/*
+This is a PONG Game I built on 6-2-20. I followed a tutorial by Chris DeLeon at Udemy (link: https://www.udemy.com/user/christopherleedeleon/)
+I mostly followed the tutorial exactly and it seems to work fine.
+The only thing I couldn't get to work properly was to have a seperate "WIN SCREEN" for when the game ends.
+
+Other improvements I'd like to make, when my coding chops allow for it:
+	-Have a "HOME PAGE/WIN SCREEN" that has 4 different game modes
+		-One game mode is easy, one is medium, one is hard, and one gets progressively harder as you go.
+	-Get the paddles off the walls a little bit
+	-Improve the Bot AI and make it a little bit more unpredictable and sharp
+	-Add a sound effect for when the ball hits the paddle
+	-Different sound effects when you win vs when you lose
+*/
+
+var canvas;
+var canvasContext;
+var ballX = 50;
+var ballY = 50;
+var ballSpeedX = 16;
+var ballSpeedY = 4;
+
+var player1Score = 0;
+var player2Score = 0;
+const WIN_SCORE = 3;
+
+var showWinScreen = false;
+
+var paddle1Y = 250;
+var paddle2Y = 250;
+const PADDLE_HEIGHT = 100;
+const PADDLE_THICKNESS = 10;
+
+//finds mouse position
+function calculateMousePosition(evt) {
+	var rect = canvas.getBoundingClientRect();
+	var root = document.documentElement;
+	var mouseX = evt.clientX - rect.left - root.scrollLeft;
+	var mouseY = evt.clientY - rect.top - root.scrollTop;
+	return {
+		x:mouseX,
+		y:mouseY
+	};
+}
+
+//resets game with mouse click
+function handleMouseClick(evt) {
+	if(showWinScreen){
+		player1Score = 0;
+		player2Score = 0;
+		showWinScreen = false;
+		console.log("SWEET FANCY MOSES");
+	}
+}
+
+window.onload = function() {
+	canvas = document.getElementById('gameCanvas');
+	canvasContext = canvas.getContext('2d');
+
+	var framesPerSecond = 30;
+	setInterval(function() {
+		moveEverything();
+		drawEverything();
+	}, 1000/framesPerSecond);
+
+	canvas.addEventListener('mousedown',handleMouseClick);
+
+	canvas.addEventListener('mousemove',
+		function(evt) {
+			var mousePos = calculateMousePosition(evt);
+			paddle1Y = mousePos.y - (PADDLE_HEIGHT/2);
+		});
+}
+
+//Resets the ball to the center during game, ends the game if a player reaches the WIN_SCORE
+function ballReset() {
+	if(player1Score >= WIN_SCORE ||
+		player2Score >= WIN_SCORE) {
+			showWinScreen = true;
+	}
+	ballSpeedX = -ballSpeedX;
+	ballX = canvas.width/2;
+	ballY = canvas.height/2;
+}
+
+
+//Computer Paddle AI
+function computerMovement() {
+	var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT/2);
+	if(paddle2Y < ballY-35) {
+		paddle2Y += 6;
+	} else if (paddle2YCenter > ballY+35) {
+		paddle2Y -= 6;
+	}
+}
+
+//movement functions - including mouse movement and AI movement
+function moveEverything(){
+	if(showWinScreen == true) {
+		return;
+	}
+
+	computerMovement();
+
+	ballX += ballSpeedX;
+	ballY += ballSpeedY;
+
+	if(ballX < 0) {
+		if(ballY > paddle1Y && ballY < paddle1Y+PADDLE_HEIGHT) {
+			ballSpeedX = -ballSpeedX;
+			var deltaY = ballY
+					-(paddle1Y+PADDLE_HEIGHT/2);
+			ballSpeedY = deltaY * 0.35;
+		} else {
+			player2Score++;
+			ballReset();
+		}
+	}
+
+	if(ballX > canvas.width) {
+		if(ballY > paddle2Y && ballY < paddle2Y+PADDLE_HEIGHT) {
+			ballSpeedX = -ballSpeedX;
+			var deltaY = ballY
+					-(paddle2Y+PADDLE_HEIGHT/2);
+			ballSpeedY = deltaY * 0.35;
+		} else {
+			player1Score++;
+			ballReset();
+		}
+	}
+	if(ballY < 0) {
+		ballSpeedY = -ballSpeedY;
+	}
+	if(ballY > canvas.height) {
+		ballSpeedY = -ballSpeedY;
+	}
+}
+
+//function that draws a net using a for loop
+function drawNet() {
+	for(var i=0;i<canvas.height; i+=40){
+		colorRect(canvas.width/2-1, i, 2, 20, 'white');
+	}
+}
+
+//The following function draws all aspects of the game including the screen
+function drawEverything() {
+	// draws black canvas
+	colorRect(0,0,canvas.width,canvas.height, 'black');
+
+	//displays the win screen
+	if(showWinScreen) {
+			canvasContext.fillStyle = 'white';
+
+			if (player1Score >= WIN_SCORE) {
+					canvasContext.fillText("You won!",383,200);
+			} else if (player2Score >= WIN_SCORE) {
+					canvasContext.fillText("You Lost!",383,200);
+			}
+			canvasContext.fillText("Click to Continue",383,400);
+	}
+
+	//draws the net
+	drawNet();
+
+	// draws left player 1 paddle
+	colorRect(0,paddle1Y,PADDLE_THICKNESS,PADDLE_HEIGHT, 'blue');
+
+	// draws right computer paddle
+	colorRect(canvas.width-PADDLE_THICKNESS,paddle2Y,PADDLE_THICKNESS,PADDLE_HEIGHT, 'red');
+
+	//draws the ball
+	colorCircle(ballX, ballY, 10, 'yellow');
+
+	//displays the scores
+	canvasContext.fillText("SCORE: " + player1Score,100,100);
+	canvasContext.fillText("SCORE: " + player2Score,canvas.width-100,100);
+}
+
+//function that can draw balls
+function colorCircle(centerX, centerY, radius, drawColor) {
+	canvasContext.fillStyle = drawColor;
+	canvasContext.beginPath();
+	canvasContext.arc(centerX, centerY, radius, 0,Math.PI*2, true);
+	canvasContext.fill();
+}
+
+//function that can build and color rectangles
+function colorRect(leftX,topY,width,height,drawColor) {
+	canvasContext.fillStyle = drawColor;
+	canvasContext.fillRect(leftX,topY,width,height);
+}
+
+</script>
+
+</html> 
